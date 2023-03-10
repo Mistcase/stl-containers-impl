@@ -3,6 +3,7 @@
 // TODO: Exception safety
 // TODO: Implement iterators
 
+#include <algorithm>
 #include <cstddef>
 #include <memory>
 #include <utility>
@@ -137,7 +138,7 @@ namespace stl_container_impl
 
         void destroy_range(T* first, T* last)
         {
-#if defined (WIN32)
+#if defined(WIN32) || defined(__APPLE__)
             for (auto ptr = first; ptr != last; ++ptr)
             {
                 Allocator_traits::destroy(m_allocator, ptr);
