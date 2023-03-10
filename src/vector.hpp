@@ -36,7 +36,7 @@ namespace stl_container_impl
 
         ~Vector()
         {
-            std::_Destroy(m_buffer, m_finish, m_allocator);
+            destroy_range(m_buffer, m_finish);
             Allocator_traits::deallocate(m_allocator, m_buffer, capacity());
         }
 
@@ -44,7 +44,7 @@ namespace stl_container_impl
         {
             if (newSize > size())
             {
-                std::_Destroy(m_buffer, m_finish, m_allocator);
+                destroy_range(m_buffer, m_finish);
                 Allocator_traits::deallocate(m_allocator, m_buffer, capacity());
 
                 const auto newCap = newSize;
@@ -60,7 +60,7 @@ namespace stl_container_impl
             else
             {
                 auto newFinish = m_buffer + newSize - size();
-                std::_Destroy(newFinish, m_finish, m_allocator);
+                destroy_range(newFinish, m_finish);
 
                 m_finish = newFinish;
             }
@@ -133,6 +133,18 @@ namespace stl_container_impl
 
             Allocator_traits::construct(m_allocator, m_finish, std::forward<Args>(args)...);
             ++m_finish;
+        }
+
+        void destroy_range(T* first, T* last)
+        {
+#if defined (WIN32)
+            for (auto ptr = first; ptr != last; ++ptr)
+            {
+                Allocator_traits::destroy(m_allocator, ptr);
+            }
+#else
+            std::_Destroy(first, last, m_allocator);
+#endif
         }
 
     private:

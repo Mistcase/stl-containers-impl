@@ -15,7 +15,7 @@ namespace stl_container_impl
         using traits_type = std::iterator_traits<Iterator>;
 
         template<typename Iter>
-        using convertible_from = std::__enable_if_t<std::is_convertible<Iter, Iterator>::value>;
+        using convertible_from = std::enable_if_t<std::is_convertible<Iter, Iterator>::value>;
 
     public:
         using iterator_type = Iterator;
