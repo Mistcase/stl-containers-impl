@@ -10,9 +10,17 @@ struct Point
         , y(_y)
     {
         // std::cout << "Point ctor!\n";
+
+        static int idx = 1;
+        id = idx++;
     }
 
-    Point(Point&& other) noexcept
+    ~Point()
+    {
+        std::cout << "Destructor\n";
+    }
+
+    Point(Point&& other)
     {
         std::cout << "Move ctor!\n";
     }
@@ -20,26 +28,60 @@ struct Point
     Point(const Point& other)
     {
         std::cout << "Copy ctor!\n";
+        throw std::exception();
+    }
+
+    Point& operator= (const Point other)
+    {
+        return *this;
     }
 
     int x, y;
+    int id;
+};
+
+template <typename T>
+class MyClass
+{
+    void foo(int s, const T& v = T())
+    {
+        T dfsd = v;
+    }
+
+    void foo(int s)
+    {
+        T sdf;
+    }
 };
 
 int main()
 {
     stl_container_impl::Vector<Point> v;
-    v.emplace_back();
-    v.emplace_back();
-    v.emplace_back();
-    v.emplace_back();
+    std::vector<Point> v1;
+
+    try
+    {
+        v.emplace_back();
+        v.emplace_back();
+    }
+    catch(...)
+    {
+        std::cout << v.size() << std::endl;
+    }
+
+    std::cout << "\n";
+
+    try
+    {
+        v1.emplace_back();
+        v1.emplace_back();
+    }
+    catch(...)
+    {
+        std::cout << v1.size() << std::endl;
+    }
 
     std::cout << "\n\n";
-
-    std::vector<Point> v1;
-    v1.emplace_back();
-    v1.emplace_back();
-    v1.emplace_back();
-    v1.emplace_back();
 
 	return 0;
 }
