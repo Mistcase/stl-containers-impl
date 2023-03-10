@@ -7,9 +7,9 @@
 #include <memory>
 #include <utility>
 
-#include "stl_iterator.h"
+#include "vector_iterator.hpp"
 
-namespace std_lib_impl
+namespace stl_container_impl
 {
     template <class T, class Allocator = std::allocator<T>>
     class Vector
@@ -26,8 +26,8 @@ namespace std_lib_impl
         using reference = value_type&;
         using const_reference = const value_type&;
 
-        using iterator = __gnu_cxx::__normal_iterator<pointer, Vector>; // This is only wrapper of pointer
-        using const_iterator = __gnu_cxx::__normal_iterator<const_pointer, Vector>; // This is only wrapper of pointer
+        using iterator = stl_container_impl::pointer_wrapper_iterator<pointer, Vector>;
+        using const_iterator = stl_container_impl::pointer_wrapper_iterator<const_pointer, Vector>;
         using reverse_iterator = std::reverse_iterator<iterator>;
         using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
