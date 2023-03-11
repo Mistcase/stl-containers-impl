@@ -297,6 +297,8 @@ namespace stl_container_impl
         iterator       end() noexcept { return iterator{ m_finish }; }
         const_iterator cend() const noexcept { return const_iterator{ m_finish }; }
 
+		Allocator get_allocator() const noexcept { return m_allocator; }
+
         reference operator[] (size_type pos) { return m_buffer[pos]; }
 
     private:
