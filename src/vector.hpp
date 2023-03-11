@@ -32,6 +32,48 @@ namespace stl_container_impl
     public:
         Vector() = default;
 
+        Vector(const Vector& other)
+        {
+            m_allocator = Allocator_traits::select_on_container_copy_construction(other.get_allocator());
+
+            const auto newCapacity = other.capacity();
+            auto buff = Allocator_traits::allocate(m_allocator, newCapacity);
+
+            try
+            {
+                construct_range(other.m_buffer, other.m_finish, buff);
+            }
+            catch (...)
+            {
+                // Destroy constructed?
+
+                Allocator_traits::deallocate(m_allocator, buff, newCapacity);
+                throw;
+            }
+
+            m_buffer = buff;
+            m_finish = m_buffer + other.size();
+            m_endOfStorage = m_buffer + newCapacity;
+        }
+
+        Vector(Vector&& other) noexcept
+        {
+            /*---------------------------------------------------------------------------------------------
+            * Constructs the container with the contents of other using move semantics.
+            * Allocator is obtained by move-construction from the allocator belonging to other.
+            * After the move, other is guaranteed to be empty().
+            -----------------------------------------------------------------------------------------------*/
+
+            m_allocator = std::move(other.m_allocator);
+            m_buffer = other.m_buffer;
+            m_finish = other.m_finish;
+            m_endOfStorage = other.m_endOfStorage;
+
+            other.m_buffer = nullptr;
+            other.m_finish = nullptr;
+            other.m_endOfStorage = nullptr;
+        }
+
         ~Vector()
         {
             destroy_range(m_buffer, m_finish);
@@ -163,12 +205,12 @@ namespace stl_container_impl
 
             if (newSize > oldSize)
             {
-                copy_range(otherBuff, otherBuff + oldSize, m_buffer);
+                copy_assign_range(otherBuff, otherBuff + oldSize, m_buffer);
                 construct_range(otherBuff + oldSize, otherBuff + newSize, m_finish);
             }
             else
             {
-                copy_range(otherBuff, otherBuff + newSize, m_buffer);
+                copy_assign_range(otherBuff, otherBuff + newSize, m_buffer);
                 destroy_range(newFinish, m_finish);
             }
 
@@ -186,7 +228,7 @@ namespace stl_container_impl
 
             /*---------------------------------------------------------------------------------------------
             * https://en.cppreference.com/w/cpp/container/vector/operator%3D
-            * 
+            *
             * If std::allocator_traits<allocator_type>::propagate_on_container_move_assignment::value is true,
             * the allocator of *this is replaced by a copy of that of other.
             * If it is false and the allocators of *this and other do not compare equal,
@@ -203,16 +245,9 @@ namespace stl_container_impl
             if (m_allocator == other.m_allocator)
             {
                 destroy_range(m_buffer, m_finish);
+                Allocator_traits::deallocate(m_allocator, m_buffer, capacity());
 
-                m_buffer = other.m_buffer;
-                m_finish = other.m_finish;
-                m_endOfStorage = other.m_endOfStorage;
-
-                other.m_buffer = nullptr;
-                other.m_finish = nullptr;
-                other.m_endOfStorage = nullptr;
-
-                // new (this) Vector(std::move(other));
+                new (this) Vector(std::move(other));
             }
             else
             {
@@ -232,7 +267,7 @@ namespace stl_container_impl
 
                     return *this;
                 }
-                
+
                 auto newFinish = m_buffer + other.size();
                 if (newSize > oldSize)
                 {
@@ -241,7 +276,7 @@ namespace stl_container_impl
                 }
                 else
                 {
-                    copy_range(other.m_buffer, other.m_finish, m_buffer);
+                    copy_assign_range(other.m_buffer, other.m_finish, m_buffer);
                     destroy_range(newFinish, m_finish);
                 }
 
@@ -348,7 +383,7 @@ namespace stl_container_impl
             }
         }
 
-        void copy_range(pointer srcFirst, pointer srcLast, pointer dst)
+        void copy_assign_range(pointer srcFirst, pointer srcLast, pointer dst)
         {
             for (; srcFirst != srcLast; ++srcFirst, ++dst)
             {
@@ -420,4 +455,4 @@ namespace stl_container_impl
         Allocator m_allocator;
     };
 
-} // namespace std_lib_impl
+} // namespace stl_container_impl
