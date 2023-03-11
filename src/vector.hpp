@@ -38,6 +38,31 @@ namespace stl_container_impl
             Allocator_traits::deallocate(m_allocator, m_buffer, capacity());
         }
 
+        void reserve(size_type count)
+        {
+            const auto capacity = this->capacity();
+            if (count <= capacity)
+            {
+                return;
+            }
+
+            try
+            {
+                auto buff = Allocator_traits::allocate(m_allocator, count);
+                auto finish = buff;
+                move_range_if_noexcept(m_buffer, m_finish, finish);
+                destroy_range(m_buffer, m_finish);
+
+                m_buffer = buff;
+                m_finish = finish;
+                m_endOfStorage = m_buffer + count;
+            }
+            catch (...)
+            {
+                throw;
+            }
+        }
+
         void resize(size_type count)
         {
             _resize(count);
@@ -100,13 +125,22 @@ namespace stl_container_impl
             Allocator_traits::destroy(m_allocator, m_finish);
         }
 
-        size_type size() const { return m_finish - m_buffer; }
-        size_type capacity() const { return m_endOfStorage - m_buffer; }
+        void clear() noexcept
+        {
+            destroy_range(m_buffer, m_finish);
+            m_finish = m_buffer;
+        }
 
-        iterator       begin() { return iterator{ m_buffer }; }
-        const_iterator cbegin() const { return const_iterator{ m_buffer }; }
-        iterator       end() { return iterator { m_finish }; }
-        const_iterator cend() const { return const_iterator{ m_finish }; }
+    public:
+        bool empty() const noexcept { return cbegin() == cend(); }
+
+        size_type size() const noexcept { return m_finish - m_buffer; }
+        size_type capacity() const noexcept { return m_endOfStorage - m_buffer; }
+
+        iterator       begin() noexcept { return iterator{ m_buffer }; }
+        const_iterator cbegin() const noexcept { return const_iterator{ m_buffer }; }
+        iterator       end() noexcept { return iterator { m_finish }; }
+        const_iterator cend() const noexcept { return const_iterator{ m_finish }; }
 
         reference operator[] (size_type pos) { return m_buffer[pos]; }
 

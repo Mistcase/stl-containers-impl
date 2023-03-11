@@ -22,11 +22,15 @@ struct Point
 
     Point(Point&& other)
     {
+        x = other.x;
+        y = other.y;
         std::cout << "Move ctor: " << this << std::endl;;
     }
 
     Point(const Point& other)
     {
+        x = other.x;
+        y = other.y;
         std::cout << "Copy ctor: " << this << std::endl;;
     }
 
@@ -47,9 +51,9 @@ int main()
     try
     {
         v.emplace_back();
-        v.emplace_back();
+        v.reserve(5);
 
-        //v.resize(5);
+        v.clear();
     }
     catch(...)
     {
@@ -60,19 +64,22 @@ int main()
     try
     {
         v1.emplace_back();
-        v1.emplace_back();
+        v1.reserve(5);
 
-        //v1.resize(5);
+        v1.clear();
     }
     catch(...)
     {
     }
 
-    std::cout << v.size() << std::endl;
-    std::cout << v1.size() << std::endl;
+    std::cout << "\n\n";
+
+    std::cout << "std::vector::size = " << v1.size() << std::endl;
+    std::cout << "std::vector::capacity = " << v1.capacity() << std::endl;
+    std::cout << "stl_lib_impl::vector::size = " << v.size() << std::endl;
+    std::cout << "stl_lib_impl::vector::capacity = " << v.capacity() << std::endl;
 
     std::cout << "\n\n";
 
-    system("pause");
 	return 0;
 }
