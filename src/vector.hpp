@@ -142,14 +142,14 @@ namespace stl_container_impl
         void move_range_if_noexcept(pointer fromFirst, pointer fromLast, pointer& to)
         {
             // Destroy previously constructed by copy ctor objects (if move is inaccessible)
-            auto _to = to;
 
+            auto _to = to;
             try
             {
                 auto ptr = fromFirst;
                 for (; ptr != fromLast; ++ptr, ++to)
                 {
-                    new (to) T(std::move_if_noexcept(*ptr));
+                    Allocator_traits::construct(m_allocator, to, std::move_if_noexcept(*ptr));
                 }
             }
             catch(...)
@@ -159,7 +159,25 @@ namespace stl_container_impl
             }
         }
 
-        void destroy_range(T* first, T* last)
+        template <typename... Args>
+        void construct_range(pointer first, pointer last, Args&& ...args)
+        {
+            auto _first = first;
+            try
+            {
+                for (; first != last; ++first)
+                {
+                    Allocator_traits::construct(m_allocator, first, std::forward(args)...);
+                }
+            }
+            catch (...)
+            {
+                destroy_range(_first, first);
+                throw;
+            }
+        }
+
+        void destroy_range(pointer first, pointer last)
         {
             // Objects have to not to throw exceptions in destructor
 #if defined(WIN32) || defined(__APPLE__)
@@ -184,14 +202,17 @@ namespace stl_container_impl
                 try
                 {
                     finish = newBuff = Allocator_traits::allocate(m_allocator, count);
+                    auto endOfStorage = newBuff + count;
+
                     move_range_if_noexcept(m_buffer, m_finish, finish);
+                    construct_range(finish, endOfStorage, constructArgs...);
                     destroy_range(m_buffer, m_finish);
 
                     Allocator_traits::deallocate(m_allocator, m_buffer, capacity());
 
                     m_buffer = newBuff;
                     m_finish = finish;
-                    m_endOfStorage = m_finish;
+                    m_endOfStorage = endOfStorage;
                 }
                 catch (std::bad_alloc)
                 {
