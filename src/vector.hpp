@@ -187,6 +187,38 @@ namespace stl_container_impl
             m_finish = m_buffer;
         }
 
+		void shrink_to_fit() noexcept
+		{
+			const auto size = this->size();
+			const auto capacity = this->capacity();
+
+			if (size == capacity)
+			{
+				return;
+			}
+
+			pointer buffer;
+			pointer finish;
+
+			try
+			{
+				finish = buffer = Allocator_traits::allocate(m_allocator, size);
+				move_construct_range_if_noexcept(m_buffer, m_finish, finish);
+
+				m_buffer = buffer;
+				m_finish = finish;
+				m_endOfStorage = m_finish;
+			}
+			catch (std::bad_alloc)
+			{
+			}
+			catch (...)
+			{
+				destroy_range(buffer, finish);
+				Allocator_traits::deallocate(m_allocator, buffer, size);
+			}
+		}
+
     public:
         Vector& operator= (const Vector& other)
         {
@@ -310,6 +342,7 @@ namespace stl_container_impl
     public:
         bool empty() const noexcept { return m_buffer == m_finish; }
 
+		size_type max_size() const noexcept { return std::numeric_limits<difference_type>::max(); }
         size_type size() const noexcept { return m_finish - m_buffer; }
         size_type capacity() const noexcept { return m_endOfStorage - m_buffer; }
 
