@@ -46,21 +46,14 @@ namespace stl_container_impl
                 return;
             }
 
-            try
-            {
-                auto buff = Allocator_traits::allocate(m_allocator, count);
-                auto finish = buff;
-                move_range_if_noexcept(m_buffer, m_finish, finish);
-                destroy_range(m_buffer, m_finish);
+            auto buff = Allocator_traits::allocate(m_allocator, count);
+            auto finish = buff;
+            move_range_if_noexcept(m_buffer, m_finish, finish);
+            destroy_range(m_buffer, m_finish);
 
-                m_buffer = buff;
-                m_finish = finish;
-                m_endOfStorage = m_buffer + count;
-            }
-            catch (...)
-            {
-                throw;
-            }
+            m_buffer = buff;
+            m_finish = finish;
+            m_endOfStorage = m_buffer + count;
         }
 
         void resize(size_type count)
@@ -76,41 +69,27 @@ namespace stl_container_impl
         template <typename... Args>
         void emplace_back(Args&& ...args)
         {
-            try
+            if (m_finish != m_endOfStorage)
             {
-                if (m_finish != m_endOfStorage)
-                {
-                    Allocator_traits::construct(m_allocator, m_finish, std::forward<Args>(args)...);
-                    m_finish++;
-                }
-                else
-                {
-                    realloc_insert(std::forward<Args>(args)...);
-                }
+                Allocator_traits::construct(m_allocator, m_finish, std::forward<Args>(args)...);
+                m_finish++;
             }
-            catch(...)
+            else
             {
-                throw;
+                realloc_insert(std::forward<Args>(args)...);
             }
         }
 
         void push_back(const T& value)
         {
-            try
+            if (m_finish != m_endOfStorage)
             {
-                if (m_finish != m_endOfStorage)
-                {
-                    Allocator_traits::construct(m_allocator, m_finish, value);
-                    ++m_finish;
-                }
-                else
-                {
-                    realloc_insert(value);
-                }
+                Allocator_traits::construct(m_allocator, m_finish, value);
+                ++m_finish;
             }
-            catch(...)
+            else
             {
-                throw;
+                realloc_insert(value);
             }
         }
 
