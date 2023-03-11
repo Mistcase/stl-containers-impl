@@ -9,7 +9,7 @@ struct Point
         : x(_x)
         , y(_y)
     {
-        std::cout << "Point ctor!\n";
+        std::cout << "Point ctor: " << this << std::endl;;
 
         static int idx = 1;
         id = idx++;
@@ -22,12 +22,12 @@ struct Point
 
     Point(Point&& other)
     {
-        std::cout << "Move ctor!\n";
+        std::cout << "Move ctor: " << this << std::endl;;
     }
 
     Point(const Point& other)
     {
-        std::cout << "Copy ctor!\n";
+        std::cout << "Copy ctor: " << this << std::endl;;
     }
 
     Point& operator= (const Point other)
@@ -46,23 +46,23 @@ int main()
 
     try
     {
-        //v.emplace_back();
-        //v.emplace_back();
+        v.emplace_back();
+        v.emplace_back();
 
-        v.resize(10);
+        //v.resize(5);
     }
     catch(...)
-    { 
+    {
     }
 
     std::cout << "\n";
 
     try
     {
-        //v1.emplace_back();
-        //v1.emplace_back();
+        v1.emplace_back();
+        v1.emplace_back();
 
-        v1.resize(10);
+        //v1.resize(5);
     }
     catch(...)
     {
@@ -70,6 +70,7 @@ int main()
 
     std::cout << v.size() << std::endl;
     std::cout << v1.size() << std::endl;
+
     std::cout << "\n\n";
 
     system("pause");

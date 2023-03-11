@@ -114,6 +114,7 @@ namespace stl_container_impl
         template <typename... Args>
         void realloc_insert(Args&& ...args)
         {
+            const auto oldSize = size();
             const auto oldCap = capacity();
             const auto newCap = oldCap + std::max(size_type(1), oldCap);
             pointer buff;
@@ -123,10 +124,11 @@ namespace stl_container_impl
             {
                 finish = buff = Allocator_traits::allocate(m_allocator, newCap);
                 move_range_if_noexcept(m_buffer, m_finish, finish);
+                Allocator_traits::construct(m_allocator, buff + oldSize, std::forward<Args>(args)...);
+                ++finish;
+
                 destroy_range(m_buffer, m_finish);
                 Allocator_traits::deallocate(m_allocator, m_buffer, capacity());
-                Allocator_traits::construct(m_allocator, finish, std::forward<Args>(args)...);
-                ++finish;
 
                 m_buffer = buff;
                 m_endOfStorage = m_buffer + newCap;
