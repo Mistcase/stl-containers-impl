@@ -108,6 +108,27 @@ namespace stl_container_impl
             _resize(count, value);
         }
 
+		void assign(size_type count, const T& value)
+		{
+			resize(count, value);
+		}
+
+		// TODO: Check if InputIt is LegacyInputIterator
+		template <typename InputIt>
+		void assign(InputIt first, InputIt last)
+		{
+			clear();
+			for (; first != last; ++first)
+			{
+				emplace_back(*first);
+			}
+		}
+
+		void assign(std::initializer_list<T> ilist)
+		{
+			assign(ilist.begin(), ilist.end());
+		}
+
         template <typename... Args>
         void emplace_back(Args&& ...args)
         {
