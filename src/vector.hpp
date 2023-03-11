@@ -320,6 +320,15 @@ namespace stl_container_impl
 
 		Allocator get_allocator() const noexcept { return m_allocator; }
 
+		reference front() { return *m_buffer; }
+		const_reference front() const { return *m_buffer; }
+
+		reference back() { return *(m_finish - 1); }
+		const_reference back() const { return *(m_finish - 1); }
+
+		pointer data() noexcept { return m_buffer; }
+		const_pointer data() const noexcept { return m_buffer; };
+
         reference operator[] (size_type pos) { return m_buffer[pos]; }
 
 		reference at(size_type pos)
