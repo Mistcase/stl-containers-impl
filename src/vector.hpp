@@ -322,6 +322,26 @@ namespace stl_container_impl
 
         reference operator[] (size_type pos) { return m_buffer[pos]; }
 
+		reference at(size_type pos)
+		{
+			if (pos >= size())
+			{
+				throw std::out_of_range("Vector::at");
+			}
+
+			return m_buffer[pos];
+		}
+
+		const_reference at(size_type pos) const
+		{
+			if (pos >= size())
+			{
+				throw std::out_of_range("Vector::at");
+			}
+
+			return m_buffer[pos];
+		}
+
     private:
         template <typename... Args>
         void realloc_insert(Args&& ...args)
