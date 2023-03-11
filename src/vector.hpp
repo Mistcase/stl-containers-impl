@@ -40,12 +40,12 @@ namespace stl_container_impl
 
         void resize(size_type count)
         {
-			_resize(count);
+            _resize(count);
         }
 
         void resize(size_type count, const value_type& value)
         {
-			_resize(count, value);
+            _resize(count, value);
         }
 
         template <typename... Args>
@@ -94,7 +94,7 @@ namespace stl_container_impl
             emplace_back(std::move(value));
         }
 
-        void pop_back()
+        void pop_back() noexcept
         {
             --m_finish;
             Allocator_traits::destroy(m_allocator, m_finish);
