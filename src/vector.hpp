@@ -287,7 +287,7 @@ namespace stl_container_impl
         }
 
     public:
-        bool empty() const noexcept { return cbegin() == cend(); }
+        bool empty() const noexcept { return m_buffer == m_finish; }
 
         size_type size() const noexcept { return m_finish - m_buffer; }
         size_type capacity() const noexcept { return m_endOfStorage - m_buffer; }
