@@ -48,7 +48,7 @@ namespace stl_container_impl
 
             auto buff = Allocator_traits::allocate(m_allocator, count);
             auto finish = buff;
-            move_range_if_noexcept(m_buffer, m_finish, finish);
+            move_construct_range_if_noexcept(m_buffer, m_finish, finish);
             destroy_range(m_buffer, m_finish);
 
             m_buffer = buff;
@@ -104,10 +104,151 @@ namespace stl_container_impl
             Allocator_traits::destroy(m_allocator, m_finish);
         }
 
+        iterator erase(iterator pos) noexcept
+        {
+            auto dest = pos.base();
+            auto src = dest + 1;
+
+            for (; src != m_finish; ++src, ++dest)
+            {
+                *dest = std::move(*src);
+            }
+
+            pop_back();
+            return iterator{ dest };
+        }
+
         void clear() noexcept
         {
             destroy_range(m_buffer, m_finish);
             m_finish = m_buffer;
+        }
+
+    public:
+        Vector& operator= (const Vector& other)
+        {
+            if (std::addressof(other) == this) // operator& can be overloaded
+            {
+                return *this;
+            }
+
+            if constexpr (Allocator_traits::propagate_on_container_copy_assignment::value)
+            {
+                m_allocator = other.m_allocator;
+            }
+
+            const auto oldCap = capacity();
+            const auto newCapacity = other.capacity();
+            const auto newSize = other.size();
+
+            auto otherBuff = other.m_buffer;
+            auto otherFinish = other.m_finish;
+
+            if (newSize > oldCap)
+            {
+                destroy_range(m_buffer, m_finish);
+                Allocator_traits::deallocate(m_allocator, m_buffer, oldCap);
+
+                auto newBuff = Allocator_traits::allocate(m_allocator, newCapacity); // TODO: Can it be allocated "other.capacity()" space by standard
+                construct_range(otherBuff, otherFinish, m_buffer);
+
+                m_finish = m_buffer + newSize;
+                m_endOfStorage = m_buffer + newCapacity;
+
+                return *this;
+            }
+
+            const auto oldSize = size();
+            auto newFinish = m_buffer + newSize;
+
+            if (newSize > oldSize)
+            {
+                copy_range(otherBuff, otherBuff + oldSize, m_buffer);
+                construct_range(otherBuff + oldSize, otherBuff + newSize, m_finish);
+            }
+            else
+            {
+                copy_range(otherBuff, otherBuff + newSize, m_buffer);
+                destroy_range(newFinish, m_finish);
+            }
+
+            m_finish = newFinish;
+
+            return *this;
+        }
+
+        Vector& operator= (Vector&& other) noexcept
+        {
+            if (std::addressof(other) == this) // operator& can be overloaded
+            {
+                return *this;
+            }
+
+            /*---------------------------------------------------------------------------------------------
+            * https://en.cppreference.com/w/cpp/container/vector/operator%3D
+            * 
+            * If std::allocator_traits<allocator_type>::propagate_on_container_move_assignment::value is true,
+            * the allocator of *this is replaced by a copy of that of other.
+            * If it is false and the allocators of *this and other do not compare equal,
+            * *this cannot take ownership of the memory owned by otherand must move-assign each element individually,
+            * allocating additional memory using its own allocator as needed.
+            * In any case, all elements originally belonging to* this are either destroyed or replaced by element-wise move-assignment.
+            -----------------------------------------------------------------------------------------------*/
+
+            if constexpr (Allocator_traits::propagate_on_container_move_assignment::value)
+            {
+                m_allocator = std::move(other.m_allocator);
+            }
+
+            if (m_allocator == other.m_allocator)
+            {
+                destroy_range(m_buffer, m_finish);
+
+                m_buffer = other.m_buffer;
+                m_finish = other.m_finish;
+                m_endOfStorage = other.m_endOfStorage;
+
+                other.m_buffer = nullptr;
+                other.m_finish = nullptr;
+                other.m_endOfStorage = nullptr;
+
+                // new (this) Vector(std::move(other));
+            }
+            else
+            {
+                const auto oldSize = size();
+                const auto oldCapacity = capacity();
+                const auto newSize = other.size();
+                const auto newCapacity = other.capacity();
+
+                if (newSize > oldCapacity)
+                {
+                    destroy_range(m_buffer, m_finish);
+                    Allocator_traits::deallocate(m_allocator, m_buffer, oldCapacity);
+
+                    m_finish = m_buffer = Allocator_traits::allocate(m_allocator, newCapacity);
+                    move_construct_range_if_noexcept(other.m_buffer, other.m_finish, m_finish);
+                    m_endOfStorage = m_buffer + newCapacity;
+
+                    return *this;
+                }
+                
+                auto newFinish = m_buffer + other.size();
+                if (newSize > oldSize)
+                {
+                    move_assign_range_if_noexcept(other.m_buffer, other.m_finish, m_buffer);
+                    move_construct_range_if_noexcept(other.m_buffer + oldSize, other.m_buffer + newSize, m_finish);
+                }
+                else
+                {
+                    copy_range(other.m_buffer, other.m_finish, m_buffer);
+                    destroy_range(newFinish, m_finish);
+                }
+
+                m_finish = newFinish;
+            }
+
+            return *this;
         }
 
     public:
@@ -118,7 +259,7 @@ namespace stl_container_impl
 
         iterator       begin() noexcept { return iterator{ m_buffer }; }
         const_iterator cbegin() const noexcept { return const_iterator{ m_buffer }; }
-        iterator       end() noexcept { return iterator { m_finish }; }
+        iterator       end() noexcept { return iterator{ m_finish }; }
         const_iterator cend() const noexcept { return const_iterator{ m_finish }; }
 
         reference operator[] (size_type pos) { return m_buffer[pos]; }
@@ -129,14 +270,14 @@ namespace stl_container_impl
         {
             const auto oldSize = size();
             const auto oldCap = capacity();
-            const auto newCap = oldCap + std::max(size_type(1), oldCap);
+            const auto newCapacity = oldCap + std::max(size_type(1), oldCap);
             pointer buff;
             pointer finish;
 
             try
             {
-                finish = buff = Allocator_traits::allocate(m_allocator, newCap);
-                move_range_if_noexcept(m_buffer, m_finish, finish);
+                finish = buff = Allocator_traits::allocate(m_allocator, newCapacity);
+                move_construct_range_if_noexcept(m_buffer, m_finish, finish);
                 Allocator_traits::construct(m_allocator, buff + oldSize, std::forward<Args>(args)...);
                 ++finish;
 
@@ -144,20 +285,19 @@ namespace stl_container_impl
                 Allocator_traits::deallocate(m_allocator, m_buffer, capacity());
 
                 m_buffer = buff;
-                m_endOfStorage = m_buffer + newCap;
+                m_endOfStorage = m_buffer + newCapacity;
                 m_finish = finish;
             }
-            catch(...)
+            catch (...)
             {
-                Allocator_traits::deallocate(m_allocator, buff, newCap);
+                Allocator_traits::deallocate(m_allocator, buff, newCapacity);
                 throw;
             }
         }
 
-        void move_range_if_noexcept(pointer fromFirst, pointer fromLast, pointer& to)
+        void move_construct_range_if_noexcept(pointer fromFirst, pointer fromLast, pointer& to)
         {
             // Destroy previously constructed by copy ctor objects (if move is inaccessible)
-
             auto _to = to;
             try
             {
@@ -167,10 +307,18 @@ namespace stl_container_impl
                     Allocator_traits::construct(m_allocator, to, std::move_if_noexcept(*ptr));
                 }
             }
-            catch(...)
+            catch (...)
             {
                 destroy_range(_to, to);
                 throw;
+            }
+        }
+
+        void move_assign_range_if_noexcept(pointer srcFirst, pointer srcLast, pointer dst) noexcept
+        {
+            for (; srcFirst != srcLast; ++srcFirst, ++dst)
+            {
+                *dst = std::move_if_noexcept(*srcFirst);
             }
         }
 
@@ -189,6 +337,22 @@ namespace stl_container_impl
             {
                 destroy_range(_first, first);
                 throw;
+            }
+        }
+
+        void construct_range(pointer srcFirst, pointer srcLast, pointer dst)
+        {
+            for (; srcFirst != srcLast; ++srcFirst, ++dst)
+            {
+                Allocator_traits::construct(m_allocator, dst, *srcFirst);
+            }
+        }
+
+        void copy_range(pointer srcFirst, pointer srcLast, pointer dst)
+        {
+            for (; srcFirst != srcLast; ++srcFirst, ++dst)
+            {
+                *dst = *srcFirst;
             }
         }
 
@@ -219,7 +383,7 @@ namespace stl_container_impl
                     finish = newBuff = Allocator_traits::allocate(m_allocator, count);
                     auto endOfStorage = newBuff + count;
 
-                    move_range_if_noexcept(m_buffer, m_finish, finish);
+                    move_construct_range_if_noexcept(m_buffer, m_finish, finish);
                     construct_range(finish, endOfStorage, constructArgs...);
                     destroy_range(m_buffer, m_finish);
 

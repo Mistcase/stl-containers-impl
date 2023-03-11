@@ -9,7 +9,7 @@ struct Point
         : x(_x)
         , y(_y)
     {
-        std::cout << "Point ctor: " << this << std::endl;;
+        std::cout << "Point ctor: " << this << std::endl;
 
         static int idx = 1;
         id = idx++;
@@ -24,18 +24,43 @@ struct Point
     {
         x = other.x;
         y = other.y;
-        std::cout << "Move ctor: " << this << std::endl;;
+        std::cout << "Move ctor: " << this << std::endl;
     }
 
     Point(const Point& other)
     {
         x = other.x;
         y = other.y;
-        std::cout << "Copy ctor: " << this << std::endl;;
+        id = other.id;
+        std::cout << "Copy ctor: " << this << std::endl;
     }
 
-    Point& operator= (const Point other)
+    Point& operator= (const Point& other)
     {
+        x = other.x;
+        y = other.y;
+        id = other.id;
+
+        std::cout << "Copy operator=: " << this << std::endl;
+
+        static size_t i = 0;
+        if (i > 0)
+        {
+            // throw 4;
+        }
+        i++;
+
+        return *this;
+    }
+
+    Point& operator= (Point&& other) noexcept
+    {
+        x = other.x;
+        y = other.y;
+        id = other.id;
+
+        std::cout << "Move operator=: " << this << std::endl;
+
         return *this;
     }
 
@@ -48,12 +73,39 @@ int main()
     stl_container_impl::Vector<Point> v;
     std::vector<Point> v1;
 
+    stl_container_impl::Vector<Point> _v;
+    _v.emplace_back();
+    _v.emplace_back();
+    _v.emplace_back();
+    _v.emplace_back();
+    _v.emplace_back();
+    _v.emplace_back();
+
+    std::cout << "Start testing...\n\n";
+
+    // Copy aasign tests:
+    // 1. NewSize < oldCapacity && NewSize > oldSize    +
+    // 2. NewSize < oldCapacity && NewSize < oldSize    +
+    // 3. NewSize > oldCapacity                         +
+
     try
     {
         v.emplace_back();
+        v.emplace_back();
+        v.emplace_back();
+        v.emplace_back();
         v.reserve(5);
 
-        v.clear();
+        std::cout << "erase...\n";
+        v.erase(v.begin() + 1);
+
+       /* std::cout << "Copy assign\n";
+        v = _v;*/
+
+        std::cout << "Move assign\n";
+        v = std::move(_v);
+
+        // v.clear();
     }
     catch(...)
     {
@@ -61,12 +113,26 @@ int main()
 
     std::cout << "\n";
 
+    std::vector<Point> v2(6);
+
     try
     {
         v1.emplace_back();
+        v1.emplace_back();
+        v1.emplace_back();
+        v1.emplace_back();
         v1.reserve(5);
 
-        v1.clear();
+        std::cout << "erase...\n";
+        v1.erase(v1.begin() + 1);
+
+       /* std::cout << "Copy assign\n";
+        v1 = v2;*/
+
+        std::cout << "Move assign\n";
+        v1 = std::move(v2);
+
+        // v1.clear();
     }
     catch(...)
     {
