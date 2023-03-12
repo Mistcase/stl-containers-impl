@@ -24,6 +24,7 @@ struct Point
     {
         x = other.x;
         y = other.y;
+        id = other.id;
         std::cout << "Move ctor: " << this << std::endl;
     }
 
@@ -81,7 +82,8 @@ int main()
     _v.emplace_back();
     _v.emplace_back();
 
-    const Point toInsert{};
+    Point toInsert{};
+    toInsert.id = -1;
 
     std::cout << "Start testing...\n\n";
 
@@ -93,8 +95,11 @@ int main()
     try
     {
         v.emplace_back();
+        // Insert here
         v.emplace_back();
-        v.reserve(3);
+        v.emplace_back();
+        v.emplace_back();
+        v.reserve(8);
 
         // std::cout << "erase...\n";
         // v.erase(v.begin() + 1);
@@ -105,8 +110,16 @@ int main()
         // std::cout << "Move assign\n";
         // v = std::move(_v);
 
+        std::cout << "Before insertion:\n";
+        for (const auto& n : v)
+            std::cout << n.id << std::endl;
+
         std::cout << "Insertion...\n";
-        v.insert(v.begin() + 1, 2, toInsert);
+        v.insert(v.begin() + 2, 2, toInsert);
+
+        std::cout << "After insertion:\n";
+        for (const auto& n : v)
+            std::cout << n.id << std::endl;
 
         // v.clear();
     }
@@ -121,8 +134,11 @@ int main()
     try
     {
         v1.emplace_back();
+        // Insert here
         v1.emplace_back();
-        v1.reserve(5);
+        v1.emplace_back();
+        v1.emplace_back();
+        v1.reserve(8);
 
         // std::cout << "erase...\n";
         // v1.erase(v1.begin() + 1);
@@ -133,8 +149,16 @@ int main()
         // std::cout << "Move assign\n";
         // v1 = std::move(v2);
 
+        std::cout << "Before insertion:\n";
+        for (const auto& n : v1)
+            std::cout << n.id << std::endl;
+
         std::cout << "Insertion...\n";
-        v1.insert(v1.begin() + 1, 2, toInsert);
+        v1.insert(v1.begin() + 1, std::move(toInsert));
+
+        std::cout << "After insertion:\n";
+        for (const auto& n : v1)
+            std::cout << n.id << std::endl;
 
         // v1.clear();
     }
