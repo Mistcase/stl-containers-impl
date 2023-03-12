@@ -2,10 +2,13 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <limits>
 #include <memory>
 #include <utility>
 
 #include "vector_iterator.hpp"
+
+// TODO: write correct helper methods. Don't use move_range_if_noexcept everywhere.
 
 namespace stl_container_impl
 {
@@ -108,26 +111,26 @@ namespace stl_container_impl
             _resize(count, value);
         }
 
-		void assign(size_type count, const T& value)
-		{
-			resize(count, value);
-		}
+        void assign(size_type count, const T& value)
+        {
+            resize(count, value);
+        }
 
-		// TODO: Check if InputIt is LegacyInputIterator
-		template <typename InputIt>
-		void assign(InputIt first, InputIt last)
-		{
-			clear();
-			for (; first != last; ++first)
-			{
-				emplace_back(*first);
-			}
-		}
+        // TODO: Check if InputIt is LegacyInputIterator
+        template <typename InputIt>
+        void assign(InputIt first, InputIt last)
+        {
+            clear();
+            for (; first != last; ++first)
+            {
+                emplace_back(*first);
+            }
+        }
 
-		void assign(std::initializer_list<T> ilist)
-		{
-			assign(ilist.begin(), ilist.end());
-		}
+        void assign(std::initializer_list<T> ilist)
+        {
+            assign(ilist.begin(), ilist.end());
+        }
 
         template <typename... Args>
         void emplace_back(Args&& ...args)
@@ -161,6 +164,71 @@ namespace stl_container_impl
             emplace_back(std::move(value));
         }
 
+        iterator insert(const_iterator pos, size_type count, const_reference value)
+        {
+            auto ptr = m_buffer + (pos.base() - m_buffer);
+            const auto oldCapacity = capacity();
+            const auto newSize = size() + count;
+
+            if (newSize <= oldCapacity)
+            {
+                const auto affected = m_finish - ptr;
+                if (count > affected)
+                {
+                    const auto toCopyConstruct = count - affected;
+                    auto newFinish = m_finish + toCopyConstruct;
+
+                    construct_range(m_finish, m_finish + toCopyConstruct, value);
+                    move_construct_range_if_noexcept(ptr, m_finish, newFinish);
+                    std::fill(ptr, m_finish, value);
+
+                    m_finish = newFinish;
+                }
+                else
+                {
+                    auto newFinish = m_finish;
+                    move_construct_range_if_noexcept(ptr, ptr + count, newFinish);
+                    move_backwards(ptr, m_finish - count, m_finish);
+                    std::fill(ptr, ptr + count, value);
+
+                    m_finish = newFinish;
+                }
+
+                return iterator{ ptr };
+            }
+
+            auto buffer = Allocator_traits::allocate(m_allocator, newSize);
+            try
+            {
+                auto finish = buffer;
+                move_construct_range_if_noexcept(m_buffer, ptr, finish);
+                construct_range(finish, finish + count, value);
+
+                auto insertedPos = iterator{ finish };
+                finish += count;
+
+                move_construct_range_if_noexcept(ptr, m_finish, finish);
+                destroy_range(m_buffer, m_finish);
+                Allocator_traits::deallocate(m_allocator, m_buffer, oldCapacity);
+
+				m_buffer = buffer;
+				m_finish = finish;
+				m_endOfStorage = m_finish;
+
+				return insertedPos;
+            }
+            catch (...)
+            {
+                destroy_range(buffer, buffer + newSize);
+                Allocator_traits::deallocate(m_allocator, buffer, newSize);
+            }
+        }
+
+        iterator insert(const_iterator pos, const_reference value)
+        {
+            return insert(pos, 1, value);
+        }
+
         void pop_back() noexcept
         {
             --m_finish;
@@ -187,37 +255,37 @@ namespace stl_container_impl
             m_finish = m_buffer;
         }
 
-		void shrink_to_fit() noexcept
-		{
-			const auto size = this->size();
-			const auto capacity = this->capacity();
+        void shrink_to_fit() noexcept
+        {
+            const auto size = this->size();
+            const auto capacity = this->capacity();
 
-			if (size == capacity)
-			{
-				return;
-			}
+            if (size == capacity)
+            {
+                return;
+            }
 
-			pointer buffer;
-			pointer finish;
+            pointer buffer;
+            pointer finish;
 
-			try
-			{
-				finish = buffer = Allocator_traits::allocate(m_allocator, size);
-				move_construct_range_if_noexcept(m_buffer, m_finish, finish);
+            try
+            {
+                finish = buffer = Allocator_traits::allocate(m_allocator, size);
+                move_construct_range_if_noexcept(m_buffer, m_finish, finish);
 
-				m_buffer = buffer;
-				m_finish = finish;
-				m_endOfStorage = m_finish;
-			}
-			catch (std::bad_alloc)
-			{
-			}
-			catch (...)
-			{
-				destroy_range(buffer, finish);
-				Allocator_traits::deallocate(m_allocator, buffer, size);
-			}
-		}
+                m_buffer = buffer;
+                m_finish = finish;
+                m_endOfStorage = m_finish;
+            }
+            catch (std::bad_alloc)
+            {
+            }
+            catch (...)
+            {
+                destroy_range(buffer, finish);
+                Allocator_traits::deallocate(m_allocator, buffer, size);
+            }
+        }
 
     public:
         Vector& operator= (const Vector& other)
@@ -342,7 +410,7 @@ namespace stl_container_impl
     public:
         bool empty() const noexcept { return m_buffer == m_finish; }
 
-		size_type max_size() const noexcept { return std::numeric_limits<difference_type>::max(); }
+        size_type max_size() const noexcept { return std::numeric_limits<difference_type>::max(); }
         size_type size() const noexcept { return m_finish - m_buffer; }
         size_type capacity() const noexcept { return m_endOfStorage - m_buffer; }
 
@@ -351,38 +419,38 @@ namespace stl_container_impl
         iterator       end() noexcept { return iterator{ m_finish }; }
         const_iterator cend() const noexcept { return const_iterator{ m_finish }; }
 
-		Allocator get_allocator() const noexcept { return m_allocator; }
+        Allocator get_allocator() const noexcept { return m_allocator; }
 
-		reference front() { return *m_buffer; }
-		const_reference front() const { return *m_buffer; }
+        reference front() { return *m_buffer; }
+        const_reference front() const { return *m_buffer; }
 
-		reference back() { return *(m_finish - 1); }
-		const_reference back() const { return *(m_finish - 1); }
+        reference back() { return *(m_finish - 1); }
+        const_reference back() const { return *(m_finish - 1); }
 
-		pointer data() noexcept { return m_buffer; }
-		const_pointer data() const noexcept { return m_buffer; };
+        pointer data() noexcept { return m_buffer; }
+        const_pointer data() const noexcept { return m_buffer; };
 
         reference operator[] (size_type pos) { return m_buffer[pos]; }
 
-		reference at(size_type pos)
-		{
-			if (pos >= size())
-			{
-				throw std::out_of_range("Vector::at");
-			}
+        reference at(size_type pos)
+        {
+            if (pos >= size())
+            {
+                throw std::out_of_range("Vector::at");
+            }
 
-			return m_buffer[pos];
-		}
+            return m_buffer[pos];
+        }
 
-		const_reference at(size_type pos) const
-		{
-			if (pos >= size())
-			{
-				throw std::out_of_range("Vector::at");
-			}
+        const_reference at(size_type pos) const
+        {
+            if (pos >= size())
+            {
+                throw std::out_of_range("Vector::at");
+            }
 
-			return m_buffer[pos];
-		}
+            return m_buffer[pos];
+        }
 
     private:
         template <typename... Args>
@@ -443,14 +511,14 @@ namespace stl_container_impl
         }
 
         template <typename... Args>
-        void construct_range(pointer first, pointer last, Args&& ...args)
+        void construct_range(pointer first, pointer last, Args& ...args)
         {
             auto _first = first;
             try
             {
                 for (; first != last; ++first)
                 {
-                    Allocator_traits::construct(m_allocator, first, std::forward(args)...);
+                    Allocator_traits::construct(m_allocator, first, args...);
                 }
             }
             catch (...)
@@ -473,6 +541,14 @@ namespace stl_container_impl
             for (; srcFirst != srcLast; ++srcFirst, ++dst)
             {
                 *dst = *srcFirst;
+            }
+        }
+
+        void move_backwards(pointer first, pointer last, pointer dst)
+        {
+            while (first != last)
+            {
+                *--dst = std::move(*--last);
             }
         }
 
