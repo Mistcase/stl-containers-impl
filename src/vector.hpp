@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <limits>
 #include <memory>
 #include <utility>
 
@@ -159,6 +160,38 @@ namespace stl_container_impl
         void push_back(value_type&& value)
         {
             emplace_back(std::move(value));
+        }
+
+        iterator insert(const_iterator pos, size_type count, const_reference value)
+        {
+            auto ptr = m_buffer + (pos.base() - m_buffer);
+            const auto oldCapacity = capacity();
+            const auto newSize = size() + count;
+
+            if (newSize <= oldCapacity)
+            {
+                // Shift elements to right
+
+            }
+
+            auto buffer = Allocator_traits::allocate(m_allocator, newSize);
+            auto finish = buffer;
+
+            move_construct_range_if_noexcept(m_buffer, ptr, finish);
+            construct_range(finish, finish + count, value);
+
+            auto result = iterator{ finish };
+            finish += count;
+
+            move_construct_range_if_noexcept(ptr, m_finish, finish);
+            destroy_range(m_buffer, m_finish);
+            Allocator_traits::deallocate(m_allocator, m_buffer, oldCapacity);
+
+            m_buffer = buffer;
+            m_finish = finish;
+            m_endOfStorage = m_finish;
+
+            return result;
         }
 
         void pop_back() noexcept
@@ -443,14 +476,14 @@ namespace stl_container_impl
         }
 
         template <typename... Args>
-        void construct_range(pointer first, pointer last, Args&& ...args)
+        void construct_range(pointer first, pointer last, Args& ...args)
         {
             auto _first = first;
             try
             {
                 for (; first != last; ++first)
                 {
-                    Allocator_traits::construct(m_allocator, first, std::forward(args)...);
+                    Allocator_traits::construct(m_allocator, first, args...);
                 }
             }
             catch (...)
