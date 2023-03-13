@@ -1,14 +1,14 @@
 #pragma once
 
+#include "vector_iterator.hpp"
 #include <algorithm>
 #include <cstddef>
 #include <limits>
 #include <memory>
 #include <utility>
 
-#include "vector_iterator.hpp"
-
 // TODO: use move_uninitialized instread of move_if_noexcept_uninitialized
+// TODO: can copy_uninitialized be replaced by std::uninitialized_copy?
 
 namespace stl_container_impl
 {
@@ -41,7 +41,7 @@ namespace stl_container_impl
 
             const auto newCapacity = other.capacity();
             auto buff = Allocator_traits::allocate(m_allocator, newCapacity);
-			auto finish = buff;
+            auto finish = buff;
 
             try
             {
@@ -49,7 +49,7 @@ namespace stl_container_impl
             }
             catch (...)
             {
-				destroy_range(buff, finish);
+                destroy_range(buff, finish);
                 Allocator_traits::deallocate(m_allocator, buff, newCapacity);
                 throw;
             }
@@ -62,10 +62,10 @@ namespace stl_container_impl
         Vector(Vector&& other) noexcept
         {
             /*---------------------------------------------------------------------------------------------
-            * Constructs the container with the contents of other using move semantics.
-            * Allocator is obtained by move-construction from the allocator belonging to other.
-            * After the move, other is guaranteed to be empty().
-            -----------------------------------------------------------------------------------------------*/
+             * Constructs the container with the contents of other using move semantics.
+             * Allocator is obtained by move-construction from the allocator belonging to other.
+             * After the move, other is guaranteed to be empty().
+             -----------------------------------------------------------------------------------------------*/
 
             m_allocator = std::move(other.m_allocator);
             m_buffer = other.m_buffer;
@@ -89,22 +89,22 @@ namespace stl_container_impl
             if (count <= capacity)
                 return;
 
-			if (count > max_size())
-				throw std::length_error("Vector::reserve");
+            if (count > max_size())
+                throw std::length_error("Vector::reserve");
 
             auto buff = Allocator_traits::allocate(m_allocator, count);
             auto finish = buff;
 
-			// Provide strong guarantee
-			try
-			{
-				move_uninitialized_if_noexcept(m_buffer, m_finish, finish);
-			}
-			catch (...)
-			{
-				destroy_range(buff, finish);
-				Allocator_traits::deallocate(m_allocator, buff, count);
-			}
+            // Provide strong guarantee
+            try
+            {
+                move_uninitialized_if_noexcept(m_buffer, m_finish, finish);
+            }
+            catch (...)
+            {
+                destroy_range(buff, finish);
+                Allocator_traits::deallocate(m_allocator, buff, count);
+            }
 
             destroy_range(m_buffer, m_finish);
 
@@ -115,59 +115,59 @@ namespace stl_container_impl
 
         void resize(size_type count)
         {
-			const auto size = this->size();
-			const auto capacity = this->capacity();
-			if (count > size)
-			{
-				if (count > max_size())
-					throw std::length_error("Vector::resize");
+            const auto size = this->size();
+            const auto capacity = this->capacity();
+            if (count > size)
+            {
+                if (count > max_size())
+                    throw std::length_error("Vector::resize");
 
-				if (count > capacity)
-				{
-					pointer newBuff = Allocator_traits::allocate(m_allocator, count);
-					pointer finish = newBuff;
-					auto endOfStorage = newBuff + count;
+                if (count > capacity)
+                {
+                    pointer newBuff = Allocator_traits::allocate(m_allocator, count);
+                    pointer finish = newBuff;
+                    auto endOfStorage = newBuff + count;
 
-					try
-					{
-						move_uninitialized_if_noexcept(m_buffer, m_finish, finish);
-						fill_uninitialized(finish, endOfStorage); // default constructed
+                    try
+                    {
+                        move_uninitialized_if_noexcept(m_buffer, m_finish, finish);
+                        fill_uninitialized(finish, endOfStorage); // default constructed
 
-						destroy_range(m_buffer, m_finish);
-						Allocator_traits::deallocate(m_allocator, m_buffer, capacity());
+                        destroy_range(m_buffer, m_finish);
+                        Allocator_traits::deallocate(m_allocator, m_buffer, capacity());
 
-						m_buffer = newBuff;
-						m_finish = finish;
-						m_endOfStorage = endOfStorage;
-					}
-					catch (...)
-					{
-						destroy_range(newBuff, finish);
-						Allocator_traits::deallocate(newBuff, count);
-						throw;
-					}
-				}
-				else
-				{
-					auto finish = m_finish;
-					try
-					{
-						fill_uninitialized(finish, finish + count);
-						m_finish = finish;
-					}
-					catch (...)
-					{
-						destroy_range(m_finish, finish);
-					}
-				}
-			}
-			else
-			{
-				auto newFinish = m_buffer + count - size;
+                        m_buffer = newBuff;
+                        m_finish = finish;
+                        m_endOfStorage = endOfStorage;
+                    }
+                    catch (...)
+                    {
+                        destroy_range(newBuff, finish);
+                        Allocator_traits::deallocate(newBuff, count);
+                        throw;
+                    }
+                }
+                else
+                {
+                    auto finish = m_finish;
+                    try
+                    {
+                        fill_uninitialized(finish, finish + count);
+                        m_finish = finish;
+                    }
+                    catch (...)
+                    {
+                        destroy_range(m_finish, finish);
+                    }
+                }
+            }
+            else
+            {
+                auto newFinish = m_buffer + count - size;
 
-				destroy_range(newFinish, m_finish);
-				m_finish = newFinish;
-			}
+                destroy_range(newFinish, m_finish);
+                m_finish = newFinish;
+            }
         }
 
         // TODO: Check if InputIt is LegacyInputIterator
@@ -187,7 +187,7 @@ namespace stl_container_impl
         }
 
         template <typename... Args>
-        void emplace_back(Args&& ...args)
+        void emplace_back(Args&&... args)
         {
             if (m_finish != m_endOfStorage)
             {
@@ -265,11 +265,11 @@ namespace stl_container_impl
                 destroy_range(m_buffer, m_finish);
                 Allocator_traits::deallocate(m_allocator, m_buffer, oldCapacity);
 
-				m_buffer = buffer;
-				m_finish = finish;
-				m_endOfStorage = m_finish;
+                m_buffer = buffer;
+                m_finish = finish;
+                m_endOfStorage = m_finish;
 
-				return insertedPos;
+                return insertedPos;
             }
             catch (...)
             {
@@ -319,7 +319,7 @@ namespace stl_container_impl
                 return;
             }
 
-            pointer buffer = Allocator_traits::allocate(m_allocator, size);;
+            pointer buffer = Allocator_traits::allocate(m_allocator, size);
             pointer finish = buffer;
 
             try
@@ -338,7 +338,7 @@ namespace stl_container_impl
         }
 
     public:
-        Vector& operator= (const Vector& other)
+        Vector& operator=(const Vector& other)
         {
             if (std::addressof(other) == this) // operator& can be overloaded
             {
@@ -359,22 +359,22 @@ namespace stl_container_impl
 
             if (newSize > oldCap)
             {
-				auto newBuff = Allocator_traits::allocate(m_allocator, newCapacity); // TODO: Can it be allocated "other.capacity()" space by standard
-				auto newFinish = newBuff;
-				try
-				{
-					copy_uninitialized(otherBuff, otherFinish, newFinish);
-				}
-				catch (...)
-				{
-					destroy_range(newBuff, newFinish);
-					Allocator_traits::deallocate(m_allocator, newBuff, newCapacity);
-				}
+                auto newBuff = Allocator_traits::allocate(m_allocator, newCapacity); // TODO: Can it be allocated "other.capacity()" space by standard
+                auto newFinish = newBuff;
+                try
+                {
+                    copy_uninitialized(otherBuff, otherFinish, newFinish);
+                }
+                catch (...)
+                {
+                    destroy_range(newBuff, newFinish);
+                    Allocator_traits::deallocate(m_allocator, newBuff, newCapacity);
+                }
 
                 destroy_range(m_buffer, m_finish);
                 Allocator_traits::deallocate(m_allocator, m_buffer, oldCap);
 
-				m_buffer = newBuff;
+                m_buffer = newBuff;
                 m_finish = m_buffer + newSize;
                 m_endOfStorage = m_buffer + newCapacity;
 
@@ -386,7 +386,7 @@ namespace stl_container_impl
 
             if (newSize > oldSize)
             {
-				newFinish = m_finish;
+                newFinish = m_finish;
                 std::copy(otherBuff, otherBuff + oldSize, m_buffer);
                 copy_uninitialized(otherBuff + oldSize, otherBuff + newSize, newFinish);
             }
@@ -401,7 +401,7 @@ namespace stl_container_impl
             return *this;
         }
 
-        Vector& operator= (Vector&& other) noexcept
+        Vector& operator=(Vector&& other) noexcept
         {
             if (std::addressof(other) == this) // operator& can be overloaded
             {
@@ -409,15 +409,15 @@ namespace stl_container_impl
             }
 
             /*---------------------------------------------------------------------------------------------
-            * https://en.cppreference.com/w/cpp/container/vector/operator%3D
-            *
-            * If std::allocator_traits<allocator_type>::propagate_on_container_move_assignment::value is true,
-            * the allocator of *this is replaced by a copy of that of other.
-            * If it is false and the allocators of *this and other do not compare equal,
-            * *this cannot take ownership of the memory owned by otherand must move-assign each element individually,
-            * allocating additional memory using its own allocator as needed.
-            * In any case, all elements originally belonging to* this are either destroyed or replaced by element-wise move-assignment.
-            -----------------------------------------------------------------------------------------------*/
+             * https://en.cppreference.com/w/cpp/container/vector/operator%3D
+             *
+             * If std::allocator_traits<allocator_type>::propagate_on_container_move_assignment::value is true,
+             * the allocator of *this is replaced by a copy of that of other.
+             * If it is false and the allocators of *this and other do not compare equal,
+             * *this cannot take ownership of the memory owned by otherand must move-assign each element individually,
+             * allocating additional memory using its own allocator as needed.
+             * In any case, all elements originally belonging to* this are either destroyed or replaced by element-wise move-assignment.
+             -----------------------------------------------------------------------------------------------*/
 
             if constexpr (Allocator_traits::propagate_on_container_move_assignment::value)
             {
@@ -469,29 +469,85 @@ namespace stl_container_impl
         }
 
     public:
-        bool empty() const noexcept { return m_buffer == m_finish; }
+        bool empty() const noexcept
+        {
+            return m_buffer == m_finish;
+        }
 
-        size_type max_size() const noexcept { return std::numeric_limits<difference_type>::max(); }
-        size_type size() const noexcept { return m_finish - m_buffer; }
-        size_type capacity() const noexcept { return m_endOfStorage - m_buffer; }
+        size_type max_size() const noexcept
+        {
+            return std::numeric_limits<difference_type>::max();
+        }
 
-        iterator       begin() noexcept { return iterator{ m_buffer }; }
-        const_iterator cbegin() const noexcept { return const_iterator{ m_buffer }; }
-        iterator       end() noexcept { return iterator{ m_finish }; }
-        const_iterator cend() const noexcept { return const_iterator{ m_finish }; }
+        size_type size() const noexcept
+        {
+            return m_finish - m_buffer;
+        }
 
-        Allocator get_allocator() const noexcept { return m_allocator; }
+        size_type capacity() const noexcept
+        {
+            return m_endOfStorage - m_buffer;
+        }
 
-        reference front() { return *m_buffer; }
-        const_reference front() const { return *m_buffer; }
+        iterator begin() noexcept
+        {
+            return iterator{ m_buffer };
+        }
 
-        reference back() { return *(m_finish - 1); }
-        const_reference back() const { return *(m_finish - 1); }
+        const_iterator cbegin() const noexcept
+        {
+            return const_iterator{ m_buffer };
+        }
 
-        pointer data() noexcept { return m_buffer; }
-        const_pointer data() const noexcept { return m_buffer; };
+        iterator end() noexcept
+        {
+            return iterator{ m_finish };
+        }
 
-        reference operator[] (size_type pos) { return m_buffer[pos]; }
+        const_iterator cend() const noexcept
+        {
+            return const_iterator{ m_finish };
+        }
+
+        Allocator get_allocator() const noexcept
+        {
+            return m_allocator;
+        }
+
+        reference front()
+        {
+            return *m_buffer;
+        }
+
+        const_reference front() const
+        {
+            return *m_buffer;
+        }
+
+        reference back()
+        {
+            return *(m_finish - 1);
+        }
+
+        const_reference back() const
+        {
+            return *(m_finish - 1);
+        }
+
+        pointer data() noexcept
+        {
+            return m_buffer;
+        }
+
+        const_pointer data() const noexcept
+        {
+            return m_buffer;
+        };
+
+        reference operator[](size_type pos)
+        {
+            return m_buffer[pos];
+        }
 
         reference at(size_type pos)
         {
@@ -515,10 +571,10 @@ namespace stl_container_impl
 
     private:
         template <typename... Args>
-        void reallocate_and_insert_back_strong(Args&& ...args);
+        void reallocate_and_insert_back_strong(Args&&... args);
 
         template <typename... Args>
-        void fill_uninitialized(pointer& first, pointer last, Args& ...args);
+        void fill_uninitialized(pointer& first, pointer last, Args&... args);
         void move_uninitialized_if_noexcept(pointer fromFirst, pointer fromLast, pointer& to);
         void copy_uninitialized(pointer srcFirst, pointer srcLast, pointer& dst);
 
@@ -535,13 +591,12 @@ namespace stl_container_impl
 
 } // namespace stl_container_impl
 
-
 // Implementation of helper methods
 namespace stl_container_impl
 {
     template <typename T, typename Allocator>
     template <typename... Args>
-    void Vector<T, Allocator>::reallocate_and_insert_back_strong(Args&& ...args)
+    void Vector<T, Allocator>::reallocate_and_insert_back_strong(Args&&... args)
     {
         using pointer = typename Vector<T>::pointer;
         using Allocator_traits = typename Vector<T>::Allocator_traits;
@@ -567,7 +622,7 @@ namespace stl_container_impl
         }
         catch (...)
         {
-			destroy_range(buff, finish);
+            destroy_range(buff, finish);
             Allocator_traits::deallocate(m_allocator, buff, newCapacity);
             throw;
         }
@@ -576,20 +631,20 @@ namespace stl_container_impl
     template <typename T, typename Allocator>
     void Vector<T, Allocator>::move_uninitialized_if_noexcept(typename Vector<T, Allocator>::pointer fromFirst, typename Vector<T, Allocator>::pointer fromLast, typename Vector<T, Allocator>::pointer& to)
     {
-		for (; fromFirst != fromLast; ++fromFirst, ++to)
-		{
-			Allocator_traits::construct(m_allocator, to, std::move_if_noexcept(*fromFirst));
-		}
+        for (; fromFirst != fromLast; ++fromFirst, ++to)
+        {
+            Allocator_traits::construct(m_allocator, to, std::move_if_noexcept(*fromFirst));
+        }
     }
 
     template <typename T, typename Allocator>
     template <typename... Args>
-    void Vector<T, Allocator>::fill_uninitialized(pointer& first, pointer last, Args& ...args)
+    void Vector<T, Allocator>::fill_uninitialized(pointer& first, pointer last, Args&... args)
     {
-		for (; first != last; ++first)
-		{
-			Allocator_traits::construct(m_allocator, first, args...);
-		}
+        for (; first != last; ++first)
+        {
+            Allocator_traits::construct(m_allocator, first, args...);
+        }
     }
 
     template <typename T, typename Allocator>
