@@ -104,6 +104,7 @@ namespace stl_container_impl
             {
                 destroy_range(buff, finish);
                 Allocator_traits::deallocate(m_allocator, buff, count);
+				throw;
             }
 
             destroy_range(m_buffer, m_finish);
@@ -158,6 +159,7 @@ namespace stl_container_impl
                     catch (...)
                     {
                         destroy_range(m_finish, finish);
+						throw;
                     }
                 }
             }
@@ -275,6 +277,7 @@ namespace stl_container_impl
             {
                 destroy_range(buffer, buffer + newSize);
                 Allocator_traits::deallocate(m_allocator, buffer, newSize);
+				throw;
             }
         }
 
@@ -334,6 +337,7 @@ namespace stl_container_impl
             {
                 destroy_range(buffer, finish);
                 Allocator_traits::deallocate(m_allocator, buffer, size);
+				throw;
             }
         }
 
@@ -369,6 +373,7 @@ namespace stl_container_impl
                 {
                     destroy_range(newBuff, newFinish);
                     Allocator_traits::deallocate(m_allocator, newBuff, newCapacity);
+					throw;
                 }
 
                 destroy_range(m_buffer, m_finish);
