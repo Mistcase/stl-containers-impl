@@ -101,21 +101,12 @@ int main()
         v.emplace_back();
         v.reserve(8);
 
-        // std::cout << "erase...\n";
-        // v.erase(v.begin() + 1);
-
-       /* std::cout << "Copy assign\n";
-        v = _v;*/
-
-        // std::cout << "Move assign\n";
-        // v = std::move(_v);
-
         std::cout << "Before insertion:\n";
         for (const auto& n : v)
             std::cout << n.id << std::endl;
 
         std::cout << "Insertion...\n";
-        v.insert(v.begin() + 2, 2, toInsert);
+        v.insert(v.begin() + 1, std::move(toInsert));
 
         std::cout << "After insertion:\n";
         for (const auto& n : v)
@@ -140,15 +131,6 @@ int main()
         v1.emplace_back();
         v1.reserve(8);
 
-        // std::cout << "erase...\n";
-        // v1.erase(v1.begin() + 1);
-
-       /* std::cout << "Copy assign\n";
-        v1 = v2;*/
-
-        // std::cout << "Move assign\n";
-        // v1 = std::move(v2);
-
         std::cout << "Before insertion:\n";
         for (const auto& n : v1)
             std::cout << n.id << std::endl;
@@ -167,12 +149,10 @@ int main()
     }
 
     std::cout << "\n\n";
-
     std::cout << "std::vector::size = " << v1.size() << std::endl;
     std::cout << "std::vector::capacity = " << v1.capacity() << std::endl;
     std::cout << "stl_lib_impl::vector::size = " << v.size() << std::endl;
     std::cout << "stl_lib_impl::vector::capacity = " << v.capacity() << std::endl;
-
     std::cout << "\n\n";
 
 	return 0;
