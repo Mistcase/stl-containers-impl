@@ -104,7 +104,7 @@ namespace stl_container_impl
             {
                 destroy_range(buff, finish);
                 Allocator_traits::deallocate(m_allocator, buff, count);
-				throw;
+                throw;
             }
 
             destroy_range(m_buffer, m_finish);
@@ -159,7 +159,7 @@ namespace stl_container_impl
                     catch (...)
                     {
                         destroy_range(m_finish, finish);
-						throw;
+                        throw;
                     }
                 }
             }
@@ -232,18 +232,17 @@ namespace stl_container_impl
                 if (count > affected)
                 {
                     const auto toCopyConstruct = count - affected;
+                    auto oldFinish = m_finish;
                     auto newFinish = m_finish + toCopyConstruct;
 
-                    fill_uninitialized(m_finish, m_finish + toCopyConstruct, value);
-                    move_uninitialized_if_noexcept(ptr, m_finish, newFinish);
-                    std::fill(ptr, m_finish, value);
-
-                    m_finish = newFinish;
+                    fill_uninitialized(m_finish, newFinish, value);
+                    move_uninitialized_if_noexcept(ptr, oldFinish, m_finish);
+                    std::fill(ptr, oldFinish, value);
                 }
                 else
                 {
                     auto newFinish = m_finish;
-                    move_uninitialized_if_noexcept(ptr, ptr + count, newFinish);
+                    move_uninitialized_if_noexcept(m_finish - count, m_finish, newFinish);
                     move_backwards(ptr, m_finish - count, m_finish);
                     std::fill(ptr, ptr + count, value);
 
@@ -258,10 +257,9 @@ namespace stl_container_impl
             {
                 auto finish = buffer;
                 move_uninitialized_if_noexcept(m_buffer, ptr, finish);
-                fill_uninitialized(finish, finish + count, value);
 
                 auto insertedPos = iterator{ finish };
-                finish += count;
+                fill_uninitialized(finish, finish + count, value);
 
                 move_uninitialized_if_noexcept(ptr, m_finish, finish);
                 destroy_range(m_buffer, m_finish);
@@ -277,7 +275,7 @@ namespace stl_container_impl
             {
                 destroy_range(buffer, buffer + newSize);
                 Allocator_traits::deallocate(m_allocator, buffer, newSize);
-				throw;
+                throw;
             }
         }
 
@@ -337,7 +335,7 @@ namespace stl_container_impl
             {
                 destroy_range(buffer, finish);
                 Allocator_traits::deallocate(m_allocator, buffer, size);
-				throw;
+                throw;
             }
         }
 
@@ -373,7 +371,7 @@ namespace stl_container_impl
                 {
                     destroy_range(newBuff, newFinish);
                     Allocator_traits::deallocate(m_allocator, newBuff, newCapacity);
-					throw;
+                    throw;
                 }
 
                 destroy_range(m_buffer, m_finish);
@@ -459,7 +457,6 @@ namespace stl_container_impl
                 if (newSize > oldSize)
                 {
                     std::move(other.m_buffer, other.m_finish, m_buffer);
-                    move_uninitialized_if_noexcept(other.m_buffer + oldSize, other.m_buffer + newSize, m_finish);
                 }
                 else
                 {
