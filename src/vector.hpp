@@ -77,6 +77,11 @@ namespace stl_container_impl
             other.m_endOfStorage = nullptr;
         }
 
+        Vector(std::initializer_list<T> list)
+        {
+            assign(list);
+        }
+
         ~Vector()
         {
             destroy_range(m_buffer, m_finish);
