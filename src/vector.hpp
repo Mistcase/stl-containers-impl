@@ -135,7 +135,7 @@ namespace stl_container_impl
                         fill_uninitialized(finish, endOfStorage); // default constructed
 
                         destroy_range(m_buffer, m_finish);
-                        Allocator_traits::deallocate(m_allocator, m_buffer, capacity());
+                        Allocator_traits::deallocate(m_allocator, m_buffer, capacity);
 
                         m_buffer = newBuff;
                         m_finish = finish;
@@ -144,7 +144,7 @@ namespace stl_container_impl
                     catch (...)
                     {
                         destroy_range(newBuff, finish);
-                        Allocator_traits::deallocate(newBuff, count);
+                        Allocator_traits::deallocate(m_allocator, newBuff, count);
                         throw;
                     }
                 }
