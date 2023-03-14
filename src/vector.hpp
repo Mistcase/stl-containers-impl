@@ -309,12 +309,6 @@ namespace stl_container_impl
             return iterator{ dest };
         }
 
-        void clear() noexcept
-        {
-            destroy_range(m_buffer, m_finish);
-            m_finish = m_buffer;
-        }
-
         void shrink_to_fit() noexcept
         {
             const auto size = this->size();
@@ -342,6 +336,12 @@ namespace stl_container_impl
                 Allocator_traits::deallocate(m_allocator, buffer, size);
                 throw;
             }
+        }
+
+        void clear() noexcept
+        {
+            destroy_range(m_buffer, m_finish);
+            m_finish = m_buffer;
         }
 
     public:
@@ -605,9 +605,6 @@ namespace stl_container_impl
     template <typename... Args>
     void Vector<T, Allocator>::reallocate_and_insert_back_strong(Args&&... args)
     {
-        using pointer = typename Vector<T>::pointer;
-        using Allocator_traits = typename Vector<T>::Allocator_traits;
-
         const auto oldSize = size();
         const auto oldCap = capacity();
         const auto newCapacity = oldCap + std::max(size_type(1), oldCap);
